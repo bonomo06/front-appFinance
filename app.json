@@ -39,7 +39,8 @@
           "icon": "./assets/notification-icon.png",
           "color": "#ffffff"
         }
-      ]
+      ],
+      "./plugins/withNotificationListener"
     ],
     "sdkVersion": "54.0.0",
     "extra": {

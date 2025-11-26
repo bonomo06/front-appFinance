@@ -54,19 +54,51 @@ export const notificationService = {
    */
   extractTransactionFromNotification(notification) {
     try {
-      const { title, body } = notification.request.content;
+      const { title, body, data } = notification.request.content;
       const text = `${title || ''} ${body || ''}`.toLowerCase();
+      const appName = (data?.appName || '').toLowerCase();
+      const packageName = (data?.android?.packageName || '').toLowerCase();
+
+      // FILTRO 1: Verificar se é de Nubank, Banco do Brasil ou Google Pay
+      const bankApps = [
+        'nubank', 'nu pagamentos', 'nu banco', 'com.nu.production',
+        'banco do brasil', 'bb', 'com.bb.android',
+        'google pay', 'gpay', 'google wallet', 'com.google.android.apps.walletnfcrel'
+      ];
+
+      const isBankApp = bankApps.some(bank => 
+        text.includes(bank) || appName.includes(bank) || packageName.includes(bank)
+      );
+
+      if (!isBankApp) {
+        console.log('❌ Notificação não é de app bancário autorizado');
+        return null;
+      }
+
+      console.log('✅ App bancário detectado');
+
+      // FILTRO 2: Verificar se tem palavras-chave de transação
+      const transactionKeywords = [
+        'recebeu', 'recebido', 'transferiu', 'transferência', 'transferencia',
+        'pagamento', 'pago', 'compra', 'pix', 'débito', 'debito', 
+        'crédito', 'credito', 'depósito', 'deposito'
+      ];
+
+      const hasTransactionKeyword = transactionKeywords.some(keyword => text.includes(keyword));
+      
+      if (!hasTransactionKeyword) {
+        console.log('❌ Sem palavras-chave de transação');
+        return null;
+      }
+
+      console.log('✅ Palavra-chave de transação encontrada');
 
       // Padrões para detectar tipo de transação
       const isPix = text.includes('pix') || text.includes('transferência recebida') || text.includes('transferencia recebida');
       const isDebit = text.includes('débito') || text.includes('debito') || text.includes('compra no débito');
       const isCredit = text.includes('crédito') || text.includes('credito') || text.includes('compra no crédito') || text.includes('fatura');
       
-      // Se não for transação financeira, retorna null
-      if (!isPix && !isDebit && !isCredit) {
-        return null;
-      }
-
+      // FILTRO 3: Deve ter valor em Reais
       // Extrai valor (procura por padrões como R$ 100,00 ou 100.00 ou 100,00)
       const valuePatterns = [
         /r\$\s*(\d+(?:[.,]\d{3})*[.,]\d{2})/i,  // R$ 1.000,00 ou R$ 1000,00
@@ -85,14 +117,24 @@ export const notificationService = {
       }
 
       if (!amount || isNaN(amount)) {
+        console.log('❌ Valor não encontrado ou inválido');
         return null;
       }
 
-      // Determina se é entrada ou saída
-      const isIncome = text.includes('recebido') || text.includes('recebeu') || 
-                       text.includes('depósito') || text.includes('deposito') ||
-                       text.includes('crédito em conta') || text.includes('credito em conta') ||
-                       text.includes('entrada');
+      console.log('✅ Valor detectado: R$', amount);
+
+      // Determina se é RECEITA ou DESPESA
+      const incomeKeywords = ['recebeu', 'recebido', 'transferência recebida', 'transferencia recebida',
+                              'depósito', 'deposito', 'crédito em conta', 'credito em conta', 'entrada'];
+      const expenseKeywords = ['transferiu', 'pagamento', 'pago', 'compra', 'débito', 'debito', 'saída', 'enviou'];
+      
+      const isIncome = incomeKeywords.some(keyword => text.includes(keyword));
+      const isExpense = expenseKeywords.some(keyword => text.includes(keyword));
+
+      // Se não conseguir detectar, considerar como despesa (mais seguro)
+      const category = isIncome ? 'income' : 'expense';
+      
+      console.log('✅ Tipo:', category === 'income' ? 'RECEITA' : 'DESPESA');
       
       let type = 'pix';
       if (isDebit) type = 'debit';

@@ -1,25 +1,108 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { notificationService } from '../services/notificationService';
+import bankNotificationListener from '../services/bankNotificationListener';
 
 const NotificationContext = createContext({});
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [autoProcessEnabled, setAutoProcessEnabled] = useState(true);
+  const [hasNotificationPermission, setHasNotificationPermission] = useState(false);
 
   useEffect(() => {
     registerNotifications();
+    checkAndRequestNotificationAccess();
     
     const listeners = notificationService.setupNotificationListeners(
       handleNotificationReceived,
       handleNotificationResponse
     );
 
+    // Listener para notificações bancárias (Android nativo)
+    const bankListener = bankNotificationListener.addListener(handleBankNotification);
+
     return () => {
       listeners.remove();
+      bankListener.remove();
     };
   }, [autoProcessEnabled]);
+
+  const checkAndRequestNotificationAccess = async () => {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+
+    const hasPermission = await bankNotificationListener.checkPermission();
+    setHasNotificationPermission(hasPermission);
+
+    if (!hasPermission) {
+      Alert.alert(
+        '🔔 Permissão Necessária',
+        'Para ler notificações bancárias automaticamente, você precisa conceder permissão de acesso às notificações.\n\n' +
+        '1. Toque em "Abrir Configurações"\n' +
+        '2. Encontre "App Finanças"\n' +
+        '3. Ative a permissão',
+        [
+          { text: 'Agora Não', style: 'cancel' },
+          {
+            text: 'Abrir Configurações',
+            onPress: async () => {
+              await bankNotificationListener.requestPermission();
+              // Verificar novamente após 2 segundos
+              setTimeout(async () => {
+                const permitted = await bankNotificationListener.checkPermission();
+                setHasNotificationPermission(permitted);
+                if (permitted) {
+                  Alert.alert('✅ Sucesso!', 'Permissão concedida. O app agora pode ler notificações bancárias.');
+                }
+              }, 2000);
+            }
+          }
+        ]
+      );
+    }
+  };
+
+  const handleBankNotification = async (notification) => {
+    console.log('🏦 Notificação bancária detectada:', notification);
+    
+    if (!autoProcessEnabled) {
+      console.log('⏸️ Processamento automático desativado');
+      return;
+    }
+
+    // Criar objeto de notificação no formato esperado
+    const formattedNotification = {
+      request: {
+        content: {
+          title: notification.title,
+          body: notification.body,
+          data: {
+            appName: notification.appName,
+            packageName: notification.packageName
+          }
+        }
+      }
+    };
+
+    const result = await notificationService.processNotificationTransaction(formattedNotification);
+    
+    if (result.success) {
+      Alert.alert(
+        '💰 Transação Automática',
+        `${result.transaction.category === 'income' ? '✅ Receita' : '❌ Despesa'} de R$ ${result.transaction.amount.toFixed(2)} registrada!\n\n` +
+        `📱 ${notification.appName}\n` +
+        `📝 ${result.transaction.description}`,
+        [{ text: 'OK' }]
+      );
+      
+      // Adicionar às notificações processadas
+      setNotifications(prev => [...prev, { ...notification, processed: true, transaction: result.transaction }]);
+    } else {
+      console.log('❌ Não foi possível processar:', result.reason);
+    }
+  };
 
   const registerNotifications = async () => {
     const token = await notificationService.registerForPushNotifications();
@@ -63,8 +146,10 @@ export const NotificationProvider = ({ children }) => {
       value={{
         notifications,
         autoProcessEnabled,
+        hasNotificationPermission,
         toggleAutoProcess,
         clearNotifications,
+        requestNotificationAccess: checkAndRequestNotificationAccess,
       }}
     >
       {children}
