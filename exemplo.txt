@@ -1,0 +1,316 @@
+### API App Finanças - Exemplos de Requisições
+### Use esta collection no VS Code com a extensão REST Client
+### ou copie para Postman/Insomnia
+
+@baseUrl = http://localhost:3000/api
+@token = SEU_TOKEN_AQUI
+
+### ============================================
+### HEALTH CHECK
+### ============================================
+
+### Health Check
+GET http://localhost:3000/health
+
+### ============================================
+### AUTENTICAÇÃO
+### ============================================
+
+### Registrar Novo Usuário
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Pedro Bonomo",
+  "email": "pedro@email.com",
+  "password": "123456"
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "pedro@email.com",
+  "password": "123456"
+}
+
+### Obter Usuário Atual
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### ============================================
+### CONTAS
+### ============================================
+
+### Buscar Conta
+GET {{baseUrl}}/accounts
+Authorization: Bearer {{token}}
+
+### Resumo Financeiro
+GET {{baseUrl}}/accounts/summary
+Authorization: Bearer {{token}}
+
+### Transferir para Poupança
+PUT {{baseUrl}}/accounts/transfer-to-savings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 100.00
+}
+
+### Retirar da Poupança
+PUT {{baseUrl}}/accounts/withdraw-from-savings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 50.00
+}
+
+### ============================================
+### TRANSAÇÕES
+### ============================================
+
+### Criar Transação - Receita (PIX)
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "pix",
+  "category": "income",
+  "amount": 1000.00,
+  "description": "Salário",
+  "categoryTag": "Salário",
+  "isAutomatic": false,
+  "balanceType": "main"
+}
+
+### Criar Transação - Despesa (Débito)
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "debit",
+  "category": "expense",
+  "amount": 50.00,
+  "description": "Supermercado",
+  "categoryTag": "Alimentação",
+  "isAutomatic": false,
+  "balanceType": "main"
+}
+
+### Criar Transação - Dinheiro
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "cash",
+  "category": "expense",
+  "amount": 25.00,
+  "description": "Lanche",
+  "categoryTag": "Alimentação",
+  "isAutomatic": false,
+  "balanceType": "main"
+}
+
+### Criar Transação - Crédito
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "credit",
+  "category": "expense",
+  "amount": 200.00,
+  "description": "Roupas",
+  "categoryTag": "Compras",
+  "isAutomatic": true,
+  "balanceType": "main"
+}
+
+### Listar Todas as Transações
+GET {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+
+### Listar Transações com Filtros
+GET {{baseUrl}}/transactions?page=1&limit=10&category=expense&type=pix
+Authorization: Bearer {{token}}
+
+### Listar Transações por Período
+GET {{baseUrl}}/transactions?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{token}}
+
+### Buscar Transação Específica
+GET {{baseUrl}}/transactions/ID_DA_TRANSACAO
+Authorization: Bearer {{token}}
+
+### Deletar Transação
+DELETE {{baseUrl}}/transactions/ID_DA_TRANSACAO
+Authorization: Bearer {{token}}
+
+### Estatísticas de Transações
+GET {{baseUrl}}/transactions/stats/summary
+Authorization: Bearer {{token}}
+
+### Estatísticas por Período
+GET {{baseUrl}}/transactions/stats/summary?startDate=2024-01-01&endDate=2024-01-31
+Authorization: Bearer {{token}}
+
+### ============================================
+### METAS
+### ============================================
+
+### Criar Meta
+POST {{baseUrl}}/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Notebook Novo",
+  "description": "MacBook Air M2",
+  "targetAmount": 8000.00,
+  "currentAmount": 0,
+  "deadline": "2024-12-31T23:59:59.000Z"
+}
+
+### Criar Meta sem Prazo
+POST {{baseUrl}}/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Fundo de Emergência",
+  "description": "Reserva de segurança",
+  "targetAmount": 10000.00,
+  "currentAmount": 2000.00
+}
+
+### Listar Todas as Metas
+GET {{baseUrl}}/goals
+Authorization: Bearer {{token}}
+
+### Listar Metas em Andamento
+GET {{baseUrl}}/goals?completed=false
+Authorization: Bearer {{token}}
+
+### Listar Metas Completadas
+GET {{baseUrl}}/goals?completed=true
+Authorization: Bearer {{token}}
+
+### Buscar Meta Específica
+GET {{baseUrl}}/goals/ID_DA_META
+Authorization: Bearer {{token}}
+
+### Atualizar Meta
+PUT {{baseUrl}}/goals/ID_DA_META
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Notebook Novo - Atualizado",
+  "targetAmount": 9000.00,
+  "deadline": "2024-11-30T23:59:59.000Z"
+}
+
+### Adicionar Valor à Meta
+PUT {{baseUrl}}/goals/ID_DA_META/add-amount
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 500.00
+}
+
+### Deletar Meta
+DELETE {{baseUrl}}/goals/ID_DA_META
+Authorization: Bearer {{token}}
+
+### Estatísticas das Metas
+GET {{baseUrl}}/goals/stats/summary
+Authorization: Bearer {{token}}
+
+### ============================================
+### CATEGORIAS
+### ============================================
+
+### Listar Categorias
+GET {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+
+### Criar Categoria Personalizada
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Freelance",
+  "icon": "💼",
+  "color": "#00FF00"
+}
+
+### Criar Outra Categoria
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Assinatura Netflix",
+  "icon": "🎬",
+  "color": "#E50914"
+}
+
+### Atualizar Categoria
+PUT {{baseUrl}}/categories/ID_DA_CATEGORIA
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Trabalho Freelance",
+  "icon": "💻",
+  "color": "#0099FF"
+}
+
+### Deletar Categoria
+DELETE {{baseUrl}}/categories/ID_DA_CATEGORIA
+Authorization: Bearer {{token}}
+
+### ============================================
+### FLUXO COMPLETO DE EXEMPLO
+### ============================================
+
+### 1. Registrar
+# POST {{baseUrl}}/auth/register
+
+### 2. Login (copiar o token retornado)
+# POST {{baseUrl}}/auth/login
+
+### 3. Ver saldo inicial
+# GET {{baseUrl}}/accounts
+
+### 4. Adicionar receita (salário)
+# POST {{baseUrl}}/transactions (PIX income 3000.00)
+
+### 5. Adicionar despesas
+# POST {{baseUrl}}/transactions (várias despesas)
+
+### 6. Transferir para poupança
+# PUT {{baseUrl}}/accounts/transfer-to-savings (500.00)
+
+### 7. Criar meta
+# POST {{baseUrl}}/goals
+
+### 8. Adicionar valor à meta
+# PUT {{baseUrl}}/goals/:id/add-amount
+
+### 9. Ver resumo
+# GET {{baseUrl}}/accounts/summary
+
+### 10. Ver estatísticas
+# GET {{baseUrl}}/transactions/stats/summary
+# GET {{baseUrl}}/goals/stats/summary
