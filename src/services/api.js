@@ -1,23 +1,11 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// ⚠️ IMPORTANTE: ALTERE ESTE IP PARA O IP DO SEU COMPUTADOR! ⚠️
-// 
-// Como descobrir seu IP:
-// Windows: Abra CMD e digite 'ipconfig', procure por 'Endereço IPv4'
-// Mac: Abra Terminal e digite 'ifconfig', procure por 'inet'
-// Linux: Abra Terminal e digite 'hostname -I'
-//
-// Exemplos:
-// const API_URL = 'http://192.168.1.100:3000/api';
-// const API_URL = 'http://192.168.0.15:3000/api';
-// const API_URL = 'http://10.0.0.5:3000/api';
-//
-const API_URL = 'http://192.168.0.11:3000/api'; // ✅ IP configurado!
+const API_URL = 'https://app-financas-api.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
